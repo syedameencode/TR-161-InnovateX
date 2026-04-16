@@ -20,6 +20,7 @@ from plotly.subplots import make_subplots
 
 from data_processing import ingest_logs, extract_features
 from model import fit_and_score, evaluate_with_synthetic_ground_truth
+from explainer import explain_anomaly
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -301,6 +302,105 @@ st.markdown("""
     background: rgba(56,189,248,0.15) !important;
     box-shadow: 0 0 20px rgba(56,189,248,0.2) !important;
     transform: translateY(-1px);
+  }
+
+  /* ── AI SECURITY ANALYST PANEL ── */
+  .ai-analyst-banner {
+    background: linear-gradient(135deg, #0d1b2a 0%, #0f2236 50%, #0a1628 100%);
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    border-radius: 18px;
+    padding: 1.6rem 2rem;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(129,140,248,0.08), inset 0 0 40px rgba(0,0,0,0.25);
+  }
+  .ai-analyst-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #818cf8, #38bdf8, transparent);
+    animation: scanline 3s ease-in-out infinite;
+  }
+  @keyframes scanline {
+    0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+  }
+  .ai-analyst-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem; font-weight: 700;
+    color: #818cf8;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .ai-analyst-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: #475569;
+    margin-top: 0.3rem; letter-spacing: 0.08em;
+  }
+
+  /* AI insight card shown per anomaly */
+  .ai-insight-card {
+    background: rgba(129,140,248,0.05);
+    border: 1px solid rgba(129,140,248,0.2);
+    border-left: 3px solid #818cf8;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0.6rem 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.87rem;
+    line-height: 1.65;
+    color: #cbd5e1;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .ai-insight-card:hover {
+    border-color: rgba(129,140,248,0.5);
+    border-left-color: #a5b4fc;
+    box-shadow: 0 4px 20px rgba(129,140,248,0.08);
+  }
+  .ai-insight-log-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #818cf8;
+    background: rgba(129,140,248,0.1);
+    border: 1px solid rgba(129,140,248,0.2);
+    border-radius: 6px;
+    padding: 0.15rem 0.5rem;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+  }
+  .ai-insight-score-badge {
+    float: right;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    color: #f87171;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: 8px;
+    padding: 0.15rem 0.5rem;
+  }
+  .ai-powered-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: rgba(129,140,248,0.12);
+    border: 1px solid rgba(129,140,248,0.3);
+    border-radius: 20px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.68rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: #818cf8;
+    letter-spacing: 0.08em;
+    margin-left: 0.8rem;
+    vertical-align: middle;
+  }
+  .gemini-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #818cf8, #38bdf8);
+    box-shadow: 0 0 6px #818cf8;
+    display: inline-block;
+    animation: blink 2s ease-in-out infinite;
   }
 </style>
 """, unsafe_allow_html=True)
@@ -1000,6 +1100,127 @@ if content:
         </div>
         """, unsafe_allow_html=True)
         st.dataframe(feat_df.round(4), use_container_width=True, height=300)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # AI SECURITY ANALYST — Gemini 1.5 Flash per-anomaly explanations
+    # ══════════════════════════════════════════════════════════════════════
+    st.markdown("""
+    <div class="section-hdr">
+      <span class="section-hdr-icon">🤖</span>
+      <span class="section-hdr-text">AI Security Analyst</span>
+      <span class="ai-powered-badge"><span class="gemini-dot"></span>GEMINI 1.5 FLASH</span>
+      <div class="section-hdr-line"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── AI Analyst intro banner ────────────────────────────────────────────
+    st.markdown("""
+    <div class="ai-analyst-banner">
+      <div class="ai-analyst-title">🧠 AI Security Analyst</div>
+      <div class="ai-analyst-subtitle">
+        Powered by Gemini 1.5 Flash · Senior SOC Analyst persona ·
+        Results cached per log line to preserve API quota
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if anomaly_df.empty:
+        st.info("✅ No anomalies to analyse — AI Analyst is on standby.")
+    else:
+        # Sidebar control injected here — how many anomalies to explain
+        ai_col1, ai_col2 = st.columns([3, 1])
+        with ai_col1:
+            st.markdown(
+                f"Select anomalies below and click **▶ Get AI Insight** to receive a "
+                f"Gemini-powered threat analysis. Results are cached for 1 hour."
+            )
+        with ai_col2:
+            max_explain = st.number_input(
+                "Max anomalies to explain",
+                min_value=1, max_value=min(20, len(anomaly_df)),
+                value=min(5, len(anomaly_df)),
+                step=1,
+                key="ai_max_explain",
+            )
+
+        # Work on the top-N anomalies by score
+        top_anomalies = anomaly_df.sort_values('anomaly_score', ascending=False).head(int(max_explain))
+
+        # ── Expandable per-row AI analysis ────────────────────────────────
+        for _, row in top_anomalies.iterrows():
+            line_no   = int(row.get('line_no', 0))
+            level     = str(row.get('level', ''))
+            score     = float(row.get('anomaly_score', 0))
+            message   = str(row.get('message', ''))
+            timestamp = str(row.get('timestamp', ''))
+            raw_line  = str(row.get('raw', message))  # use raw if present
+
+            expander_label = (
+                f"⚠️  Line {line_no:>4}  |  [{level}]  |  Score {score:.4f}  "
+                f"|  {message[:70]}{'…' if len(message) > 70 else ''}"
+            )
+
+            with st.expander(expander_label, expanded=False):
+                # Show the raw log line
+                st.markdown(
+                    f"<div class='ai-insight-log-ref'>📄 {timestamp} · Line {line_no} · {level}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.code(raw_line, language="", line_numbers=False)
+
+                # Trigger analysis with spinner
+                btn_key = f"ai_btn_{line_no}_{score}"
+                if st.button("▶ Get AI Insight", key=btn_key, type="secondary"):
+                    with st.spinner("🤖 Consulting Gemini 1.5 Flash…"):
+                        ai_result = explain_anomaly(raw_line)
+
+                    st.markdown(
+                        f"""
+                        <div class="ai-insight-card">
+                          <span class="ai-insight-score-badge">SCORE {score:.4f}</span>
+                          {ai_result}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+        # ── Batch Explain All Button ───────────────────────────────────────
+        st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
+        if st.button(
+            f"⚡ Batch Analyse All {int(max_explain)} Anomalies",
+            key="ai_batch_btn",
+            type="primary",
+        ):
+            batch_results = []
+            progress = st.progress(0, text="🤖 Analysing anomalies with Gemini…")
+            total = len(top_anomalies)
+
+            for idx, (_, row) in enumerate(top_anomalies.iterrows()):
+                line_no = int(row.get('line_no', 0))
+                score   = float(row.get('anomaly_score', 0))
+                message = str(row.get('message', ''))
+                raw_line = str(row.get('raw', message))
+
+                with st.spinner(f"Analysing line {line_no}…"):
+                    ai_result = explain_anomaly(raw_line)
+
+                batch_results.append((line_no, score, raw_line[:80], ai_result))
+                progress.progress((idx + 1) / total, text=f"🤖 Analysed {idx+1}/{total} anomalies…")
+
+            progress.empty()
+
+            st.success(f"✅ Batch analysis complete — {total} anomalies explained.")
+            for line_no, score, preview, result in batch_results:
+                st.markdown(
+                    f"""
+                    <div class="ai-insight-card">
+                      <span class="ai-insight-score-badge">SCORE {score:.4f}</span>
+                      <div class="ai-insight-log-ref">Line {line_no} · {preview}…</div>
+                      {result}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     # ── Download ───────────────────────────────────────────────────────────
     st.markdown("---")

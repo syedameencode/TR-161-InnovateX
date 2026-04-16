@@ -14,3 +14,7 @@ plotly>=5.20.0               # Interactive charts (time-series, histogram)
 
 # ── Utilities ──────────────────────────────────────────────
 scipy>=1.12.0                # Sparse matrix support (hstack for TF-IDF)
+
+# ── AI Security Analyst (Gemini integration) ───────────────
+google-genai>=0.7.0          # Google Generative AI SDK (Gemini 1.5 Flash)
+python-dotenv>=1.0.0         # Load GEMINI_API_KEY from .env file
