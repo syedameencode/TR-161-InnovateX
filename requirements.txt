@@ -1,0 +1,16 @@
+# ============================================================
+#  requirements.txt
+#  Intelligent Log Anomaly Detection System
+# ============================================================
+
+# ── Core ML stack ──────────────────────────────────────────
+scikit-learn>=1.4.0          # Isolation Forest, One-Class SVM, TF-IDF, scalers
+numpy>=1.26.0                # Numerical computation
+pandas>=2.2.0                # DataFrame operations
+
+# ── Dashboard ──────────────────────────────────────────────
+streamlit>=1.33.0            # Dashboard framework
+plotly>=5.20.0               # Interactive charts (time-series, histogram)
+
+# ── Utilities ──────────────────────────────────────────────
+scipy>=1.12.0                # Sparse matrix support (hstack for TF-IDF)

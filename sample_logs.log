@@ -1,0 +1,111 @@
+# ============================================================
+#  sample_logs.log  —  Synthetic System Log Dataset
+#  Use this file to immediately test the anomaly detector.
+#
+#  Format: YYYY-MM-DD HH:MM:SS [LEVEL] component: message
+#  Anomalies are intentionally seeded throughout.
+# ============================================================
+
+# ── Normal morning traffic ──────────────────────────────────
+2024-03-10 06:00:01 [INFO] api_gateway: GET /api/v1/health 200 4ms 0.1KB
+2024-03-10 06:01:15 [INFO] auth_service: User alice logged in successfully
+2024-03-10 06:02:30 [INFO] api_gateway: GET /api/v1/products 200 38ms 4.5KB
+2024-03-10 06:03:42 [INFO] api_gateway: POST /api/v1/orders 201 55ms 0.9KB
+2024-03-10 06:04:10 [INFO] db_service: Query executed in 12ms — 45 rows returned
+2024-03-10 06:05:00 [INFO] api_gateway: GET /api/v1/users/profile 200 31ms 1.0KB
+2024-03-10 06:06:20 [DEBUG] cache_service: Cache hit for key product_catalog_v3
+2024-03-10 06:07:05 [INFO] api_gateway: GET /api/v1/categories 200 27ms 2.1KB
+2024-03-10 06:08:44 [INFO] auth_service: Token refreshed for user bob
+2024-03-10 06:09:30 [INFO] api_gateway: GET /api/v1/orders/history 200 66ms 8.1KB
+2024-03-10 06:10:00 [INFO] scheduler: Health check passed — all services OK
+
+# ── ⚠ ANOMALY: Brute-force login attack ──────────────────────
+2024-03-10 06:11:01 [ERROR] auth_service: Failed login attempt for user root from IP 198.51.100.5
+2024-03-10 06:11:02 [ERROR] auth_service: Failed login attempt for user root from IP 198.51.100.5
+2024-03-10 06:11:03 [ERROR] auth_service: Failed login attempt for user root from IP 198.51.100.5
+2024-03-10 06:11:04 [ERROR] auth_service: Failed login attempt for user root from IP 198.51.100.5
+2024-03-10 06:11:05 [ERROR] auth_service: Failed login attempt for user root from IP 198.51.100.5
+2024-03-10 06:11:06 [CRITICAL] auth_service: Brute-force attack detected — IP 198.51.100.5 blocked after 5 failures
+
+# ── Normal continued ─────────────────────────────────────────
+2024-03-10 06:12:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:13:18 [INFO] api_gateway: GET /api/v1/products/99 200 35ms 0.7KB
+2024-03-10 06:14:05 [INFO] db_service: Query executed in 18ms — 10 rows returned
+2024-03-10 06:15:00 [INFO] auth_service: User carol logged in successfully
+2024-03-10 06:16:22 [INFO] api_gateway: PUT /api/v1/orders/1042 200 47ms 0.8KB
+2024-03-10 06:17:10 [DEBUG] cache_service: Cache miss for key report_2024_q1 — fetching from DB
+
+# ── ⚠ ANOMALY: Database connection pool exhausted ────────────
+2024-03-10 06:18:00 [WARNING] db_service: Connection pool at 85% capacity (85/100)
+2024-03-10 06:18:30 [WARNING] db_service: Connection pool at 95% capacity (95/100)
+2024-03-10 06:18:45 [ERROR] db_service: Connection pool at 100% — new requests queuing
+2024-03-10 06:18:55 [CRITICAL] db_service: Connection pool exhausted — all 100 connections in use — requests failing
+2024-03-10 06:19:05 [ERROR] api_gateway: GET /api/v1/users 503 8210ms — DB connection timeout
+
+# ── Normal ───────────────────────────────────────────────────
+2024-03-10 06:20:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:21:30 [INFO] api_gateway: POST /api/v1/users 201 60ms 0.9KB
+2024-03-10 06:22:45 [INFO] db_service: Query executed in 22ms — 200 rows returned
+2024-03-10 06:23:10 [INFO] auth_service: User dave logged in successfully
+2024-03-10 06:24:00 [INFO] api_gateway: GET /api/v1/products 200 39ms 4.5KB
+
+# ── ⚠ ANOMALY: Disk full / I/O errors ────────────────────────
+2024-03-10 06:25:00 [WARNING] storage_service: Disk usage at 88% on /dev/sda1
+2024-03-10 06:25:30 [WARNING] storage_service: Disk usage at 93% on /dev/sda1
+2024-03-10 06:25:58 [ERROR] storage_service: Disk usage at 97% — write operations degraded
+2024-03-10 06:26:10 [FATAL] storage_service: Filesystem /dev/sda1 is read-only — I/O error EIO
+2024-03-10 06:26:15 [CRITICAL] storage_service: Log rotation failed — cannot write to /var/log/app.log
+
+# ── Normal ───────────────────────────────────────────────────
+2024-03-10 06:27:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:28:00 [INFO] api_gateway: GET /api/v1/categories 200 28ms 2.1KB
+2024-03-10 06:29:30 [INFO] auth_service: User alice logged out
+2024-03-10 06:30:00 [INFO] scheduler: Cache warm-up completed — 4,210 keys loaded
+
+# ── ⚠ ANOMALY: OOM killer + cascading service crash ──────────
+2024-03-10 06:31:00 [CRITICAL] memory_monitor: Available memory: 42MB (threshold: 256MB)
+2024-03-10 06:31:05 [CRITICAL] memory_monitor: OOM killer invoked — process api-worker-2 (PID 7741) terminated
+2024-03-10 06:31:06 [CRITICAL] memory_monitor: OOM killer invoked — process api-worker-3 (PID 7742) terminated
+2024-03-10 06:31:10 [ERROR] api_gateway: GET /api/v1/checkout 500 15234ms — no healthy upstream
+
+# ── Normal ───────────────────────────────────────────────────
+2024-03-10 06:32:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:33:15 [INFO] api_gateway: GET /api/v1/products/12 200 41ms 0.7KB
+2024-03-10 06:34:00 [INFO] db_service: Query executed in 14ms — 1 row returned
+2024-03-10 06:35:20 [INFO] auth_service: User eve logged in successfully
+2024-03-10 06:36:00 [INFO] api_gateway: GET /api/v1/orders 200 43ms 3.2KB
+2024-03-10 06:37:10 [DEBUG] cache_service: Cache hit for key user_preferences_42
+
+# ── ⚠ ANOMALY: Network packet loss + circuit breaker ─────────
+2024-03-10 06:38:00 [WARNING] network_service: Packet loss 12% on interface eth0
+2024-03-10 06:38:30 [WARNING] network_service: Packet loss 24% on interface eth0 — degraded
+2024-03-10 06:38:50 [ERROR] network_service: Packet loss 41% on interface eth0 — connection unstable
+2024-03-10 06:39:00 [ERROR] payment_service: Connection refused to payment-gateway.prod:443 (attempt 1/3)
+2024-03-10 06:39:05 [ERROR] payment_service: Connection refused to payment-gateway.prod:443 (attempt 2/3)
+2024-03-10 06:39:10 [ERROR] payment_service: Connection refused to payment-gateway.prod:443 (attempt 3/3)
+2024-03-10 06:39:12 [CRITICAL] api_gateway: Circuit breaker OPEN for payment-service — failing fast
+
+# ── Late normal traffic ───────────────────────────────────────
+2024-03-10 06:40:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:41:00 [INFO] api_gateway: GET /api/v1/products 200 36ms 4.5KB
+2024-03-10 06:42:15 [INFO] auth_service: User frank logged in successfully
+2024-03-10 06:43:00 [INFO] api_gateway: POST /api/v1/sessions 201 52ms 0.5KB
+2024-03-10 06:44:30 [INFO] db_service: Query executed in 10ms — 5 rows returned
+2024-03-10 06:45:00 [INFO] api_gateway: GET /api/v1/orders/history 200 71ms 8.1KB
+2024-03-10 06:46:10 [INFO] scheduler: Nightly report generated successfully
+2024-03-10 06:47:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+
+# ── ⚠ ANOMALY: Unhandled exception / traceback ───────────────
+2024-03-10 06:48:00 [ERROR] recommendation_engine: Unhandled exception in predict()
+2024-03-10 06:48:00 [ERROR] recommendation_engine: Traceback (most recent call last): File model.py line 204 in predict
+2024-03-10 06:48:00 [ERROR] recommendation_engine: ValueError: Input array contains NaN — model cannot infer
+2024-03-10 06:48:01 [ERROR] recommendation_engine: Traceback — service entering degraded mode
+
+# ── Final normal lines ────────────────────────────────────────
+2024-03-10 06:49:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
+2024-03-10 06:50:00 [INFO] auth_service: User alice logged in successfully
+2024-03-10 06:51:20 [INFO] api_gateway: GET /api/v1/products 200 37ms 4.5KB
+2024-03-10 06:52:00 [INFO] api_gateway: POST /api/v1/orders 201 58ms 0.9KB
+2024-03-10 06:53:15 [INFO] db_service: Query executed in 16ms — 30 rows returned
+2024-03-10 06:54:00 [INFO] api_gateway: GET /api/v1/categories 200 30ms 2.1KB
+2024-03-10 06:55:00 [INFO] api_gateway: GET /api/v1/health 200 5ms 0.1KB
