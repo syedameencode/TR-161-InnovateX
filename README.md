@@ -162,3 +162,7 @@ This project is built for a hackathon submission. Add your preferred license her
 ## Author
 
 Built for Tensor Hackathon 2026.
+
+## Website
+
+https://tr-161-innovatex-anamoly-detection-tool.onrender.com
